@@ -74,10 +74,10 @@ primary = fork do
     #                                          |                              | filebyindex          |                                                    |
     #                                          |                              | windowalert_bool     |                                                    |
     #                                          | ItemTitle                    | hitcount             | search_syntax                                      | alert_message                           aditional parameters
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("Terminal session",             0,false,0,	          "New session",                                        "New Terminal session DETECTED"))
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("Failed SU Invoke",             0,false,0,		      "FAILED su",                                          "Failed su session invoke DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("Terminal session",             0,false,0,	      "New session",                                        "New Terminal session DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("Failed SU Invoke",             0,false,0,  	      "FAILED su",                                          "Failed su session invoke DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH auth Faliure",             0,false,0,            "pam_unix(sshd:auth): authentication failure",        "SSH authentication faliure DETECTED"))
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH Password Faliure",         0,false,0,		      "sshd.*: Failed password for",                        "SSH Password faliure DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH Password Faliure",         0,false,0,	      "sshd.*: Failed password for",                        "SSH Password faliure DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("SUDO auth Faliure",            0,false,0,            "pam_unix(sudo:auth): authentication failure",        "SUDO authentication faliure DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("Lockscreen - Login Faliure",   0,true,0,             "(gnome-screensaver:auth): authentication failure",   "GNOME Lockscreen - Login Failure DETECTED"))
     # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
