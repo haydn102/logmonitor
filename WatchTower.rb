@@ -36,17 +36,22 @@ primary = fork do
     # =========================
     
     # ==== FUNCTIONAL VARIABLES ====
-    @main_logfile = "WATCHTOWER_verboseLog.txt" # verbose log including captured log output
-    @event_logfile = "WATCHTOWER_eventlog.txt"  # Basic log with :generalname events
-    @status_file = "WATCHTOWER_statuslog.txt"   # Running summary data
+    @main_logfile   = "WATCHTOWER_verboseLog.txt" # verbose log including captured log output
+    @event_logfile  = "WATCHTOWER_eventlog.txt"  # Basic log with :generalname events
+    @status_file    = "WATCHTOWER_statuslog.txt"   # Running summary data
 
     # MUST CONTAIN ROOT PATH
     @LOGFILE_STORE = [
         "/var/log/auth.log",
-        #"/var/log/gufw.log",                   # Uncomment if GUFW installed
-        #"/var/log/fail2ban.log",               # uncomment if fail2ban installed
-        #"/var/log/clamav/freshclam.log"        # uncomment if clamav installed
-        "/var/log/syslog"]
+        "/var/log/syslog",
+        "/var/log/gufw.log",
+        "/var/log/fail2ban.log",
+        "/var/log/clamav/freshclam.log"]
+
+    @SERVICESTATUS_CHECK = [
+        "fail2ban",
+        "psad",
+        "ufw"]
     # ==============================
 
     # ==== SEARCH ITEMS =======
@@ -74,16 +79,23 @@ primary = fork do
     #                                          |                              | filebyindex          |                                                    |
     #                                          |                              | windowalert_bool     |                                                    |
     #                                          | ItemTitle                    | hitcount             | search_syntax                                      | alert_message                           aditional parameters
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("Terminal session",             0,false,0,	      "New session",                                        "New Terminal session DETECTED"))
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("Failed SU Invoke",             0,false,0,  	      "FAILED su",                                          "Failed su session invoke DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("Terminal session",             0,false,0,	          "New session",                                        "New Terminal session DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("Failed SU Invoke",             0,false,0,		      "FAILED su",                                          "Failed su session invoke DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH auth Faliure",             0,false,0,            "pam_unix(sshd:auth): authentication failure",        "SSH authentication faliure DETECTED"))
-    @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH Password Faliure",         0,false,0,	      "sshd.*: Failed password for",                        "SSH Password faliure DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("SSH Password Faliure",         0,false,0,		      "sshd.*: Failed password for",                        "SSH Password faliure DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("SUDO auth Faliure",            0,false,0,            "pam_unix(sudo:auth): authentication failure",        "SUDO authentication faliure DETECTED"))
     @SEARCH_ARRAY.push(Searchcommand_struct.new("Lockscreen - Login Faliure",   0,true,0,             "(gnome-screensaver:auth): authentication failure",   "GNOME Lockscreen - Login Failure DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("UFW Disable",                  0,true,0,             "COMMAND=/usr/sbin/ufw disable",                      "UFW Disable DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("UFW Enable",                   0,false,0,            "COMMAND=/usr/sbin/ufw enable",                       "UFW Enable DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("PSAD - PortScan",              1,false,0,            "psad: scan detected",                                "Port Scan Detected",           "ignore 224.0.0.1 | ignore 224.0.0.251"))     # configured not to alarm if multicast 224.0.0.1 05 .251
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("PSAD - IP Tables AutoBlock",   1,false,0,            "psad: added iptables auto-block",                    "PSAD IP enforcement DETECTED"))
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("Fail2ban BAN enforcement",     3,true,0,             "NOTICE  [sshd] Ban",                                 "Fail2ban BAN enforcement DETECTED"))   
+    @SEARCH_ARRAY.push(Searchcommand_struct.new("ClamAV Update started",        4,false,0,            "ClamAV update process started at",                   "ClamAV update process started at"))
     # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    @standalone_mode = @standalone_mode.to_s
     @silent_mode = @silent_mode.to_s
+
+    print "RECEIVED #{silentmode_inputpar}"
 
     if silentmode_inputpar == "true"
         @silent_mode = true
@@ -139,8 +151,9 @@ primary = fork do
         return 0 # return nil/fail status
     end
 
-     # checks file for syntax
-     # - File denoted by index supplied as function parameter
+    # checks file for syntax
+    # - File denoted by index supplied as function parameter
+   
     def search_protocol(fileindex,target_syntax,hit_count,alert_message,windowalert_bool,searchItemIndex)      
             time = Time.new
             detection_match_string = "DETECTION CONFIRMED"
@@ -289,7 +302,6 @@ primary = fork do
             counter = counter + 1
         end
 
-
         while true
         	# array (wipes every loop) contains output from functionality, dumps in file.
         	@output_temp = []
@@ -404,9 +416,51 @@ primary = fork do
 				end
 			end
 
+            # ///////////////////////////////////////////
+            # run service statuscheck once every 10 turns
+            if totalloop_iteration % 10 == 0 
+                checkservice
+            end
+
             totalloop_iteration = totalloop_iteration + 1
         end
 
+    end
+
+    def checkservice # runs service --status-all check and greps for string match in SERVICESTATUS_CHECK[]
+        len = @SERVICESTATUS_CHECK.length
+        counter = 0
+
+        command = "sudo service --status-all | grep -e #{@SERVICESTATUS_CHECK[counter]}"
+        while counter < len
+            command = command + " -e #{@SERVICESTATUS_CHECK[counter]}"
+            counter = counter + 1
+        end
+
+        counter = 0
+        output = `#{command}`.split("\n") # execute
+        while counter < len
+            if output[counter].include? "-"
+
+                alert_message = "WATCHTOWER: servicecheck #{output[counter]} -> restarting"
+                system("sudo service #{@SERVICESTATUS_CHECK[counter]} start")
+
+                if @silent_mode == false
+                    print "\n"
+                    print alert_message
+                end
+                form = "notify-send WATCHTOWER \"ALLERT: #{alert_message} !!\""
+                system form
+                form = "echo \"[#{alert_message.rstrip}]\" >> /home/#{@user.rstrip}/#{@main_logfile}"
+                system form
+                form = "echo \"[#{`date`.rstrip}] - #{alert_message.rstrip}\" >> /home/#{@user.rstrip}/#{@event_logfile}"
+                system form
+
+            else
+                print "\n WATCHTOWER: servicecheck #{output[counter]}"
+            end
+            counter = counter + 1
+        end
     end
 
     def preliminary_operation
