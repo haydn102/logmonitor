@@ -1,0 +1,91 @@
+Rules:
+  - name: New Terminal Session
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "New Session"
+    alert_message: "New Terminal session DETECTED"
+    loghit_exception: null
+
+  - name: Failed SU Invocation
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "FAILED su"
+    alert_message: "Failed su session invoke DETECTED"
+    loghit_exception: null
+
+  - name: SSH Auth Failure
+    logfile: /var/log/auth.log
+    windowallert: True
+    loghit_text: "pam_unix(sshd:auth): authentication failure"
+    alert_message: "SSH authentication faliure DETECTED"
+    loghit_exception: null
+
+  - name: SSH Password Failure
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "sshd.*: Failed password for"
+    alert_message: "SSH Password faliure DETECTED"
+    loghit_exception: null
+
+  - name: Sudo Auth Failure
+    logfile: /var/log/auth.log
+    windowallert: False 
+    loghit_text: "pam_unix(sudo:auth): authentication failure"
+    alert_message: "SUDO authentication faliure DETECTED"
+    loghit_exception: null
+
+  - name: Sudo Auth Failure
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "(sudo:auth): auth could not identify password"
+    alert_message: "SUDO authentication faliure DETECTED"
+    loghit_exception: null
+
+  - name: Lockscreen - Login Failure
+    logfile: /var/log/auth.log
+    windowallert: True
+    loghit_text: "(gnome-screensaver:auth): authentication failure"
+    alert_message: "GNOME Lockscreen - Login Failure DETECTED"
+    loghit_exception: null
+
+  - name: UFW Disable
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "COMMAND=/usr/sbin/ufw disable"
+    alert_message: "UFW Disable DETECTED"
+    loghit_exception: null
+
+  - name: UFW Enable
+    logfile: /var/log/auth.log
+    windowallert: False
+    loghit_text: "COMMAND=/usr/sbin/ufw enable"
+    alert_message: "UFW Enable DETECTED"
+    loghit_exception: null
+
+  - name: PSAD - Portscan Detected
+    logfile: /var/log/syslog
+    windowallert: False
+    loghit_text:  "psad: scan detected"
+    alert_message: "UFW Enable DETECTED"
+    loghit_exception: null
+
+  - name: PSAD - IP Tables AutoBlock Action
+    logfile: /var/log/syslog
+    windowallert: False
+    loghit_text: "psad: added iptables auto-block"
+    alert_message: "Port Scan Detected"
+    loghit_exception: null
+  
+  - name: CLAMAV Update Started
+    logfile: /var/log/clamav/freshclam.log
+    windowallert: False
+    loghit_text: "ClamAV update process started at"
+    alert_message: "ClamAV update process started"
+    loghit_exception: "224.0.0.1 | 224.0.0.251"
+    
+  - name: Fail2ban BAN Enforcement Action
+    logfile: /var/log/fail2ban.log
+    windowallert: False
+    loghit_text: "NOTICE  [sshd] Ban"
+    alert_message: "Fail2ban BAN enforcement DETECTED"
+    loghit_exception: null
